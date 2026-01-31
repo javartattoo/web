@@ -189,7 +189,7 @@ p {
     background: url('Assets/Hand.jpg'); 
     background-size: cover;
     background-position: center;
-    background-attachment: fixed;
+    background-attachment: scroll;   /* ← CHANGED TO SCROLL */
     filter: brightness(1.2) contrast(0.5);
     z-index: 0;
 }

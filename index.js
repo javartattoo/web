@@ -288,14 +288,26 @@ document.querySelectorAll('.book-btn').forEach(btn => {
     });
 });
 
-// ========== PARALLAX EFFECT ON HERO =========
-window.addEventListener('scroll', () => {
-    const hero = document.querySelector('.hero');
-    if (hero) {
-        const scrollPosition = window.pageYOffset;
-        hero.style.backgroundPosition = `center ${scrollPosition * 0.5}px`;
+// ========== MOBILE-FRIENDLY PARALLAX EFFECT ON HERO =========
+// Disable parallax on mobile devices and use simple scroll positioning instead
+const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+if (!isMobile) {
+    // Desktop: Use parallax effect
+    window.addEventListener('scroll', () => {
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            const scrollPosition = window.pageYOffset;
+            hero.style.backgroundPosition = `center ${scrollPosition * 0.5}px`;
+        }
+    });
+} else {
+    // Mobile: Remove background-attachment: fixed for better performance
+    const heroBackground = document.querySelector('.hero-background');
+    if (heroBackground) {
+        heroBackground.style.backgroundAttachment = 'scroll';
     }
-});
+}
 
 // ========== HOVER EFFECTS FOR BUTTONS =========
 document.querySelectorAll('button').forEach(button => {

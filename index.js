@@ -95,6 +95,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // ========== GALLERY OVERLAY TOGGLE FOR MOBILE =========
+    // Detect if device supports touch
+    const isTouchDevice = () => {
+        return (
+            (typeof window !== 'undefined' &&
+                ('ontouchstart' in window ||
+                    (typeof window.DocumentTouch !== 'undefined' &&
+                        document instanceof window.DocumentTouch))) ||
+            typeof navigator !== 'undefined' &&
+            (navigator.maxTouchPoints > 0 ||
+                navigator.msMaxTouchPoints > 0)
+        );
+    };
+
+    if (isTouchDevice()) {
+        // Mobile: Add click/tap handler to toggle overlay
+        galleryItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Toggle overlay visibility
+                const overlay = this.querySelector('.gallery-overlay');
+                if (overlay) {
+                    this.classList.toggle('overlay-active');
+                    
+                    // Close other overlays
+                    galleryItems.forEach(otherItem => {
+                        if (otherItem !== this) {
+                            otherItem.classList.remove('overlay-active');
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Close overlay when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.gallery-item')) {
+                galleryItems.forEach(item => {
+                    item.classList.remove('overlay-active');
+                });
+            }
+        });
+    }
+    
     // ========== TESTIMONIALS CAROUSEL =========
     const testimonials = document.querySelectorAll('.testimonial-item');
     const dots = document.querySelectorAll('.dot');

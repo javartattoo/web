@@ -1,4 +1,4 @@
-// ========== SMOOTH SCROLLING & ACTIVE NAV =========
+// ============ SMOOTH SCROLL NAVIGATION ============
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -33,70 +33,158 @@ function updateActiveNav() {
 
 window.addEventListener('scroll', updateActiveNav);
 
-// ========== HAMBURGER MENU =========
+// ============ HAMBURGER MENU ============
 const hamburger = document.querySelector('.hamburger');
-const navLinks = document.querySelector('.nav-links');
+const navLinksMenu = document.querySelector('.nav-links');
 
 if (hamburger) {
     hamburger.addEventListener('click', () => {
         hamburger.classList.toggle('active');
-        navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+        navLinksMenu.style.display = navLinksMenu.style.display === 'flex' ? 'none' : 'flex';
     });
 }
 
-// Close menu when a link is clicked
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
         if (hamburger) hamburger.classList.remove('active');
-        if (navLinks) navLinks.style.display = 'none';
+        if (navLinksMenu) navLinksMenu.style.display = 'none';
     });
 });
 
-// ========== WAIT FOR DOM TO LOAD =========
+// ============ GALLERY FUNCTIONALITY ============
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded - Initializing Gallery and Carousel');
+    const IMAGES_PER_PAGE = 8;
+    let currentFilter = 'all';
+    let currentPage = 1;
+    let allGalleryItems = [];
+    let filteredItems = [];
     
-    // ========== GALLERY FILTERS =========
     const filterBtns = document.querySelectorAll('.filter-btn');
     const galleryItems = document.querySelectorAll('.gallery-item');
+    const galleryGrid = document.querySelector('.gallery-grid');
     
-    console.log('Gallery Items Found:', galleryItems.length);
-    console.log('Filter Buttons Found:', filterBtns.length);
+    allGalleryItems = Array.from(galleryItems);
     
-    // Show all items on load
-    galleryItems.forEach(item => {
-        item.classList.add('show');
-        console.log('Added show class to item:', item.getAttribute('data-category'));
-    });
+    // Get all unique categories
+    const availableCategories = [...new Set(allGalleryItems.map(item => item.getAttribute('data-category')))];
     
-    // Add filter button click handlers
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            console.log('Filter button clicked:', this.getAttribute('data-filter'));
+    function displayGalleryItems() {
+        // Determine which items to show based on filter
+        if (currentFilter === 'all') {
+            filteredItems = allGalleryItems;
+        } else {
+            filteredItems = allGalleryItems.filter(item => 
+                item.getAttribute('data-category') === currentFilter
+            );
+        }
+        
+        // Hide all items first
+        allGalleryItems.forEach(item => {
+            item.classList.remove('show');
+        });
+        
+        // Show items for current page
+        const startIndex = 0;
+        const endIndex = currentPage * IMAGES_PER_PAGE;
+        const itemsToShow = filteredItems.slice(startIndex, endIndex);
+        
+        itemsToShow.forEach((item, index) => {
+            item.classList.add('show');
+            item.style.animationDelay = `${index * 0.1}s`;
+        });
+        
+        // Remove old buttons
+        removeButtons();
+        
+        // Create appropriate button(s)
+        createButtons();
+    }
+    
+    function removeButtons() {
+        const existingMoreBtn = document.querySelector('.see-more-btn');
+        const existingLessBtn = document.querySelector('.see-less-btn');
+        if (existingMoreBtn) existingMoreBtn.remove();
+        if (existingLessBtn) existingLessBtn.remove();
+    }
+    
+    function createButtons() {
+        const totalItems = filteredItems.length;
+        const displayedItems = currentPage * IMAGES_PER_PAGE;
+        
+        // Create container for buttons if it doesn't exist
+        let buttonContainer = document.querySelector('.gallery-button-container');
+        if (!buttonContainer) {
+            buttonContainer = document.createElement('div');
+            buttonContainer.className = 'gallery-button-container';
+            galleryGrid.parentElement.appendChild(buttonContainer);
+        }
+        
+        // Show "See More" if there are more items to load
+        if (displayedItems < totalItems) {
+            const seeMoreBtn = document.createElement('button');
+            seeMoreBtn.className = 'see-more-btn';
+            seeMoreBtn.textContent = 'See More';
             
-            // Update button states
+            seeMoreBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                currentPage++;
+                displayGalleryItems();
+                setTimeout(() => {
+                    const newItems = galleryGrid.querySelectorAll('.gallery-item.show');
+                    if (newItems.length > 0) {
+                        newItems[newItems.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            });
+            
+            buttonContainer.appendChild(seeMoreBtn);
+        }
+        // Show "See Less" if we're viewing more than the first page
+        else if (currentPage > 1) {
+            const seeLessBtn = document.createElement('button');
+            seeLessBtn.className = 'see-less-btn';
+            seeLessBtn.textContent = 'See Less';
+            
+            seeLessBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                currentPage = 1;
+                displayGalleryItems();
+                setTimeout(() => {
+                    const firstItems = galleryGrid.querySelectorAll('.gallery-item.show');
+                    if (firstItems.length > 0) {
+                        firstItems[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            });
+            
+            buttonContainer.appendChild(seeLessBtn);
+        }
+    }
+    
+    // Initial display
+    displayGalleryItems();
+    
+    // Filter button clicks
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const filterValue = this.getAttribute('data-filter');
+            
+            // Update active filter button
             filterBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             
-            const filter = this.getAttribute('data-filter');
+            // Reset pagination and filter
+            currentFilter = filterValue;
+            currentPage = 1;
             
-            // Filter items
-            galleryItems.forEach(item => {
-                const category = item.getAttribute('data-category');
-                
-                if (filter === 'all' || category === filter) {
-                    item.classList.add('show');
-                    console.log('Showing:', category);
-                } else {
-                    item.classList.remove('show');
-                    console.log('Hiding:', category);
-                }
-            });
+            displayGalleryItems();
         });
     });
     
-    // ========== GALLERY OVERLAY TOGGLE FOR MOBILE =========
-    // Detect if device supports touch
+    // Touch device detection for gallery overlay
     const isTouchDevice = () => {
         return (
             (typeof window !== 'undefined' &&
@@ -110,57 +198,45 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     if (isTouchDevice()) {
-        // Mobile: Add click/tap handler to toggle overlay
-        galleryItems.forEach(item => {
-            item.addEventListener('click', function(e) {
+        galleryGrid.addEventListener('click', function(e) {
+            const galleryItem = e.target.closest('.gallery-item');
+            if (galleryItem && galleryItem.classList.contains('show')) {
                 e.stopPropagation();
                 
-                // Toggle overlay visibility
-                const overlay = this.querySelector('.gallery-overlay');
+                const overlay = galleryItem.querySelector('.gallery-overlay');
                 if (overlay) {
-                    this.classList.toggle('overlay-active');
+                    galleryItem.classList.toggle('overlay-active');
                     
-                    // Close other overlays
-                    galleryItems.forEach(otherItem => {
-                        if (otherItem !== this) {
+                    document.querySelectorAll('.gallery-item.show').forEach(otherItem => {
+                        if (otherItem !== galleryItem) {
                             otherItem.classList.remove('overlay-active');
                         }
                     });
                 }
-            });
+            }
         });
         
-        // Close overlay when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.gallery-item')) {
-                galleryItems.forEach(item => {
+                document.querySelectorAll('.gallery-item.overlay-active').forEach(item => {
                     item.classList.remove('overlay-active');
                 });
             }
         });
     }
     
-    // ========== TESTIMONIALS CAROUSEL =========
+    // ============ TESTIMONIALS CAROUSEL ============
     const testimonials = document.querySelectorAll('.testimonial-item');
     const dots = document.querySelectorAll('.dot');
     const prevBtn = document.getElementById('prevTestimonial');
     const nextBtn = document.getElementById('nextTestimonial');
     
-    console.log('Testimonials Found:', testimonials.length);
-    console.log('Dots Found:', dots.length);
-    console.log('Prev Button:', prevBtn ? 'Found' : 'Not Found');
-    console.log('Next Button:', nextBtn ? 'Found' : 'Not Found');
-    
     let currentTestimonial = 0;
     
     function showTestimonial(index) {
-        console.log('Showing testimonial:', index);
-        
-        // Clamp index
         if (index < 0) index = testimonials.length - 1;
         if (index >= testimonials.length) index = 0;
         
-        // Update all testimonials
         testimonials.forEach((item, i) => {
             if (i === index) {
                 item.classList.add('active');
@@ -169,7 +245,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Update all dots
         dots.forEach((dot, i) => {
             if (i === index) {
                 dot.classList.add('active');
@@ -181,41 +256,34 @@ document.addEventListener('DOMContentLoaded', function() {
         currentTestimonial = index;
     }
     
-    // Previous button
     if (prevBtn) {
         prevBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Previous clicked');
             showTestimonial(currentTestimonial - 1);
         });
     }
     
-    // Next button
     if (nextBtn) {
         nextBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Next clicked');
             showTestimonial(currentTestimonial + 1);
         });
     }
     
-    // Dot clicks
     dots.forEach((dot, index) => {
         dot.addEventListener('click', () => {
-            console.log('Dot clicked:', index);
             showTestimonial(index);
         });
     });
     
-    // Initialize first testimonial
     showTestimonial(0);
     
-    // Auto-rotate every 5 seconds
+    // Auto-rotate testimonials
     setInterval(() => {
         showTestimonial(currentTestimonial + 1);
     }, 5000);
     
-    // Keyboard navigation
+    // Keyboard navigation for testimonials
     document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft') {
             showTestimonial(currentTestimonial - 1);
@@ -225,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ========== GALLERY ANIMATIONS =========
+// ============ INTERSECTION OBSERVER FOR ANIMATIONS ============
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -100px 0px'
@@ -240,7 +308,6 @@ const observer = new IntersectionObserver(function(entries) {
     });
 }, observerOptions);
 
-// Observe gallery items after DOM loads
 document.addEventListener('DOMContentLoaded', () => {
     const galleryItemsLightbox = document.querySelectorAll('.gallery-item');
     galleryItemsLightbox.forEach(item => {
@@ -248,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ========== FORM SUBMISSION =========
+// ============ CONTACT FORM ============
 const contactForm = document.getElementById('contactForm');
 
 if (contactForm) {
@@ -268,7 +335,6 @@ if (contactForm) {
     });
 }
 
-// ========== NOTIFICATION SYSTEM =========
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
@@ -296,7 +362,7 @@ function showNotification(message, type = 'success') {
     }, 4000);
 }
 
-// ========== SCROLL ANIMATIONS =========
+// ============ SCROLL ANIMATIONS ============
 function animateOnScroll() {
     const elements = document.querySelectorAll('.about-item, .info-item');
     
@@ -323,7 +389,7 @@ window.addEventListener('load', () => {
     animateOnScroll();
 });
 
-// ========== BOOK NOW BUTTON =========
+// ============ BOOK BUTTON SCROLL ============
 document.querySelectorAll('.book-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const contactSection = document.querySelector('#contact');
@@ -333,12 +399,10 @@ document.querySelectorAll('.book-btn').forEach(btn => {
     });
 });
 
-// ========== MOBILE-FRIENDLY PARALLAX EFFECT ON HERO =========
-// Disable parallax on mobile devices and use simple scroll positioning instead
+// ============ PARALLAX EFFECT ============
 const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
 if (!isMobile) {
-    // Desktop: Use parallax effect
     window.addEventListener('scroll', () => {
         const hero = document.querySelector('.hero');
         if (hero) {
@@ -347,37 +411,20 @@ if (!isMobile) {
         }
     });
 } else {
-    // Mobile: Remove background-attachment: fixed for better performance
     const heroBackground = document.querySelector('.hero-background');
     if (heroBackground) {
         heroBackground.style.backgroundAttachment = 'scroll';
     }
 }
 
-// ========== HOVER EFFECTS FOR BUTTONS =========
+// ============ BUTTON HOVER EFFECTS ============
 document.querySelectorAll('button').forEach(button => {
     button.addEventListener('mouseenter', function() {
         this.style.transition = 'all 0.3s ease';
     });
 });
 
-// ========== GALLERY LIGHTBOX EFFECT =========
-document.addEventListener('DOMContentLoaded', () => {
-    const galleryItemsLightbox = document.querySelectorAll('.gallery-item');
-    galleryItemsLightbox.forEach(item => {
-        item.addEventListener('click', function() {
-            const overlay = this.querySelector('.gallery-overlay');
-            if (overlay) {
-                this.style.transform = 'scale(1.05)';
-                setTimeout(() => {
-                    this.style.transform = 'scale(1)';
-                }, 300);
-            }
-        });
-    });
-});
-
-// ========== NAVBAR BACKGROUND ON SCROLL =========
+// ============ NAVBAR SCROLL EFFECT ============
 window.addEventListener('scroll', () => {
     const navbar = document.querySelector('.navbar');
     if (navbar) {
@@ -389,7 +436,7 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// ========== SCROLL TO TOP BUTTON =========
+// ============ SCROLL TO TOP BUTTON ============
 const scrollToTopBtn = document.createElement('button');
 scrollToTopBtn.textContent = '↑';
 scrollToTopBtn.className = 'scroll-to-top';
@@ -438,7 +485,7 @@ scrollToTopBtn.addEventListener('mouseleave', function() {
     this.style.background = '#d4af37';
 });
 
-// Add notification animations
+// ============ DYNAMIC STYLES ============
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideInNotification {
@@ -461,6 +508,58 @@ style.textContent = `
             opacity: 0;
             transform: translateX(100px);
         }
+    }
+    
+    .gallery-button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+        gap: 20px;
+    }
+    
+    .see-more-btn,
+    .see-less-btn {
+        display: inline-block;
+        padding: 15px 40px;
+        background: #d4af37;
+        color: #1a1a1a;
+        border: none;
+        border-radius: 5px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .see-more-btn:hover {
+        background: #c41e3a;
+        color: #f5f5f5;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .see-more-btn:active {
+        transform: translateY(0);
+    }
+    
+    .see-less-btn {
+        background: #c41e3a;
+        color: #f5f5f5;
+    }
+    
+    .see-less-btn:hover {
+        background: #d4af37;
+        color: #1a1a1a;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .see-less-btn:active {
+        transform: translateY(0);
     }
 `;
 document.head.appendChild(style);
